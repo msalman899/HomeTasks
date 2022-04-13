@@ -1,0 +1,8 @@
+CronJobs: []
+
+serviceAccount:
+  create: false
+  name: s3-writer
+  labels: ""
+  annotations: 
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/s3-writer

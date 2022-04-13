@@ -1,0 +1,50 @@
+environments:
+  default:
+    values:
+      - clusters:
+          - qa
+          - staging
+
+releases:
+{{- range .Values.clusters}}
+
+- name: {{ . }}-s3-writer
+  chart: ./chart
+  kubeContext: kind-mscluster1
+  createNamespace: true
+  namespace: {{ . }}
+  version: 0.1.0
+  labels:
+    app: {{ . }}-s3-writer
+    cluster: {{ . }}
+  values:
+    - serviceAccount:
+        create: true
+        name: s3-writer
+        labels:
+          app: {{ . }}-s3-writer
+        namespace: {{ . }}
+        annotations: 
+          eks.amazonaws.com/role-arn: arn:aws:iam::123456789:role/s3-writer
+    - CronJobs:
+      - name: {{ . }}-s3-writer
+        fullnameOverride: {{ . }}-s3-writer
+        namespace: {{ . }}
+        extraLabels:
+          app: {{ . }}-s3-writer
+        schedule: 0 5 * * *
+        serviceAccountName: s3-writer
+        backoffLimit: 1
+        containers:
+          - name: s3_writer
+            image: python:3.9-slim-buster
+            command: ["/bin/sh", "-ec"]
+            args:
+              - |
+                apt-get update && apt-get -y install git > /dev/null
+                git clone --branch main https://github.com/msalman899/HomeTasks.git
+                cd s3_writer/src
+                pip install -r requirements.txt > /dev/null
+                python s3_writer.py --bucket {{ . }}-muhammad-salman-platform-challenge
+
+{{- end }}
